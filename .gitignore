@@ -1,0 +1,5 @@
+*.log
+game_log.txt
+__pycache__/
+*.py[cod]
+.DS_Store
