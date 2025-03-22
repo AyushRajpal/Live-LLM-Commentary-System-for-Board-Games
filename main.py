@@ -8,6 +8,7 @@ import os
 import logging
 import traceback
 from datetime import datetime
+import sys
 
 # local imports
 from checkers_game import CheckersGame, CheckersUI
@@ -16,35 +17,65 @@ from llm_integration import CommentaryGenerator
 from config_util import get_config
 
 
-# Get current date and time
-now = datetime.now()
-
-# Format the datetime object to a string
-timestamp = now.strftime("%Y%m%d_%H%M%S")
-log_dir = os.path.abspath('./')
-log_file_name = f'game_log_{timestamp}.txt'
-try:
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    log_adr = os.path.join(log_dir, log_file_name)
-    # Set up logging
-    logging.basicConfig(
-        filename=log_adr,
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        filemode='w'
-    )
-    print(f"Logging to: {log_adr}")
-except Exception as e:
-    print(f"Error setting up logging: {str(e)}")
-    # Fallback to console logging
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    log_adr = "console (file logging failed)"
-
-
+def setup_logging():
+    """Set up logging with proper error handling and path resolution"""
+    # Get current date and time
+    now = datetime.now()
+    
+    # Format the datetime object to a string
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    
+    # Use absolute path for logs directory - store in the same directory as the script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    log_dir = os.path.join(script_dir, "logs")
+    log_file_name = f'game_log_{timestamp}.log'
+    
+    try:
+        # Create logs directory if it doesn't exist
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        
+        log_path = os.path.join(log_dir, log_file_name)
+        
+        # Check if we can write to the log file
+        try:
+            # Test if file can be opened for writing
+            with open(log_path, 'w') as f:
+                pass
+            
+            # Reset logging in case it was configured elsewhere
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+                
+            # Set up logging with the verified path
+            logging.basicConfig(
+                filename=log_path,
+                level=logging.DEBUG,
+                format='%(asctime)s - %(levelname)s - %(message)s',
+                filemode='w'
+            )
+            print(f"Logging to: {log_path}")
+            return log_path
+            
+        except (IOError, PermissionError) as write_error:
+            print(f"Cannot write to log file: {str(write_error)}")
+            raise
+            
+    except Exception as e:
+        print(f"Error setting up logging: {str(e)}")
+        print(f"Falling back to console logging")
+        
+        # Ensure no handlers remain from earlier attempts
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+            
+        # Configure for console logging
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            stream=sys.stdout
+        )
+        return "console (file logging failed)"
 
 
 # ===============================
@@ -73,6 +104,7 @@ except Exception as e:
 
 def main():
     """Main function to run the application."""
+    
     try:
         logging.info("Starting application")
         
@@ -108,6 +140,7 @@ def main():
 if __name__ == "__main__":
     try:
         print("Starting Checkers Commentary System...")
+        log_adr = setup_logging()
         logging.info("===== APPLICATION STARTING =====")
         main()
     except Exception as e:
