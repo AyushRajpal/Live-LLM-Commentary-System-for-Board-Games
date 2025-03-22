@@ -3,30 +3,17 @@ Live Checkers Commentary System
 ===============================
 A system that provides real-time commentary for checkers games using LLM technology.
 """
-# library imports
-from datetime import datetime
-import config
-import numpy as np
-import requests
-from checkers_game import CheckersGame, CheckersUI
-from checkers_evaluator import CheckersAnalyzer
-from config import CONFIG
-from llm_integration import CommentaryGenerator
-import pygame
-
 # python imports
-import time
-import json
 import os
-from enum import Enum
-import threading
 import logging
 import traceback
-import sys
-import subprocess
+from datetime import datetime
 
 # local imports
-import utils
+from checkers_game import CheckersGame, CheckersUI
+from checkers_evaluator import CheckersAnalyzer
+from llm_integration import CommentaryGenerator
+from config_util import get_config
 
 
 # Get current date and time
@@ -34,19 +21,28 @@ now = datetime.now()
 
 # Format the datetime object to a string
 timestamp = now.strftime("%Y%m%d_%H%M%S")
-log_dir = './logs'
-log_file_name = f'game_log_{timestamp}.log'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-log_adr = os.path.join(log_dir, log_file_name)
-
-# Set up logging
-logging.basicConfig(
-    filename=log_adr,
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-print(f"Logging to: {log_adr}")
+log_dir = os.path.abspath('./')
+log_file_name = f'game_log_{timestamp}.txt'
+try:
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_adr = os.path.join(log_dir, log_file_name)
+    # Set up logging
+    logging.basicConfig(
+        filename=log_adr,
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        filemode='w'
+    )
+    print(f"Logging to: {log_adr}")
+except Exception as e:
+    print(f"Error setting up logging: {str(e)}")
+    # Fallback to console logging
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    log_adr = "console (file logging failed)"
 
 
 
@@ -81,7 +77,7 @@ def main():
         logging.info("Starting application")
         
         # load config
-        CONFIG = config.get_config()
+        CONFIG = get_config()
         logging.info("Configuration loaded")
         logging.info(f"Config: {CONFIG}")
         # Initialize the game
