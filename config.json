@@ -1,0 +1,9 @@
+{
+    "llm_provider": "mock",
+    "api_key": "",
+    "commentary_style": "educational",
+    "text_to_speech": true,
+    "board_size": 8,
+    "window_width": 800,
+    "window_height": 600
+}
