@@ -15,7 +15,7 @@ import sys
 import subprocess
 
 # local imports
-from config import get_config
+from config_util import get_config
 from text2speech import CommandTTS
 import utils
 
@@ -213,38 +213,6 @@ class CheckersGame:
     def get_board_state(self):
         """Return the current board state as a 2D array."""
         return self.board.copy()
-
-    def get_game_state_description(self):
-        """Generate a text description of the current game state for the LLM."""
-        board_state = self.get_board_state()
-        
-        # Count pieces
-        white_pieces = np.count_nonzero((board_state == PieceType.WHITE.value) | 
-                                         (board_state == PieceType.WHITE_KING.value))
-        black_pieces = np.count_nonzero((board_state == PieceType.BLACK.value) | 
-                                         (board_state == PieceType.BLACK_KING.value))
-        white_kings = np.count_nonzero(board_state == PieceType.WHITE_KING.value)
-        black_kings = np.count_nonzero(board_state == PieceType.BLACK_KING.value)
-        
-        # Generate text description
-        description = f"Current player: {self.current_player.name}\n"
-        description += f"Black pieces: {black_pieces} (including {black_kings} kings)\n"
-        description += f"White pieces: {white_pieces} (including {white_kings} kings)\n"
-        
-        # Include the last move if available
-        if self.move_history:
-            last_move = self.move_history[-1]
-            start_notation = utils.coord_to_notation(last_move['start'][0], last_move['start'][1])
-            end_notation = utils.coord_to_notation(last_move['end'][0], last_move['end'][1])
-            description += f"Last move: {last_move['player']} moved from {start_notation} to {end_notation}"
-            if last_move['is_capture']:
-                description += " (capture)"
-            description += "\n"
-        
-        # Include available moves for current player
-        description += f"Available moves for {self.current_player.name}: {len(self.available_moves)}\n"
-        
-        return description
 
 
 

@@ -4,7 +4,9 @@ import json
 import logging
 import traceback
 import requests
-from config import get_config
+from board2description import get_game_state_description
+
+from config_util import get_config
 
 CONFIG = get_config()
 
@@ -94,7 +96,7 @@ class CommentaryGenerator:
     def generate_commentary(self, game, analysis):
         """Generate commentary based on the current game state."""
         try:
-            game_state = game.get_game_state_description()
+            game_state = get_game_state_description(game)
             
             # Choose the appropriate LLM provider
             if CONFIG["llm_provider"] == "gemini":
