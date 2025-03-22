@@ -105,9 +105,14 @@ class CommentaryGenerator:
             elif CONFIG["llm_provider"] == "openai":
                 # Implement OpenAI integration here
                 commentary = "OpenAI integration not implemented yet."
-            else:
+            elif CONFIG["llm_provider"] == "mock":
                 # Mock commentary for testing
                 commentary = self._generate_mock_commentary(game_state, analysis)
+            else:
+                if CONFIG["llm_provider"]:
+                    return f"Unknown LLM provider: {CONFIG['llm_provider']}"
+                else:
+                    return "LLM provider not configured."
             
             # Add to history
             self.commentary_history.append({
