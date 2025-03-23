@@ -1,24 +1,15 @@
 # library imports
 import numpy as np
-import requests
 import pygame
 
 # python imports
-import time
-import json
-import os
 from enum import Enum
-import threading
 import logging
 import traceback
-import sys
-import subprocess
 
 # local imports
-# from checkers_evaluator import CheckersAnalyzer
 from config_util import get_config
 from text2speech import CommandTTS
-import utils
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

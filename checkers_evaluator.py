@@ -1,18 +1,9 @@
 # library imports
 import numpy as np
-import requests
-import pygame
 
 # python imports
-import time
-import json
-import os
-from enum import Enum
-import threading
 import logging
 import traceback
-import sys
-import subprocess
 
 # local imports
 from checkers_game import CheckersGame, PieceType

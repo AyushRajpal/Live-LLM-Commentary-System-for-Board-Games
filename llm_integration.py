@@ -1,9 +1,13 @@
+# library imports
+import requests
 
+# python imports
 import time
 import json
 import logging
 import traceback
-import requests
+
+# local imports
 from board2description import get_game_state_description
 
 from config_util import get_config
