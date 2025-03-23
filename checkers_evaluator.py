@@ -104,12 +104,49 @@ class CheckersAnalyzer:
             logging.error(f"Error in get_best_move: {str(e)}")
             logging.error(traceback.format_exc())
             return None
+        
+    def generate_move_analysis(self, best_move):
+        # Analyze the best move
+        move_analysis = "No moves available"
+        if best_move:
+            # Convert to chess notation for display
+            start_notation = utils.coord_to_notation(best_move[0][0], best_move[0][1])
+            end_notation = utils.coord_to_notation(best_move[1][0], best_move[1][1])
+            
+            is_capture = abs(best_move[1][0] - best_move[0][0]) > 1
+            move_type = "capture" if is_capture else "move"
+            move_analysis = f"Best {move_type} is from {start_notation} to {end_notation}"
+
+        return move_analysis
+    
+    def get_material_analysis_string(self, white_pieces, black_pieces):
+        material_diff = black_pieces - white_pieces
+        if material_diff > 0:
+            return f"Black has a material advantage of {material_diff} pieces."
+        elif material_diff < 0:
+            return f"White has a material advantage of {abs(material_diff)} pieces."
+        else:
+            return "Material is even."
+    
+    def king_potential_count(self,game:CheckersGame):
+        board = game.get_board_state()
+        res = 0
+        for move in game.available_moves:
+                start, end = move
+                piece = PieceType(board[start[0], start[1]])
+                if ((piece == PieceType.BLACK and end[0] == 0) or 
+                    (piece == PieceType.WHITE and end[0] == 7)):
+                    res += 1
+        return res
+            
+
     
     def analyze_game_state(self):
         """Analyze the current game state and return observations."""
         try:
-            board = self.game.get_board_state()
-            current_player = self.game.current_player
+            game : CheckersGame = self.game # type hinting
+            board = game.get_board_state()
+            current_player = game.current_player
             
             # Count pieces
             white_pieces = np.count_nonzero((board == PieceType.WHITE.value) | 
@@ -122,45 +159,17 @@ class CheckersAnalyzer:
             
             # Material advantage
             material_diff = black_pieces - white_pieces
-            if material_diff > 0:
-                material_advantage = "Black has a material advantage"
-            elif material_diff < 0:
-                material_advantage = "White has a material advantage"
-            else:
-                material_advantage = "Material is even"
-            
-            # Analyze the best move
-            move_analysis = "No moves available"
-            if best_move:
-                # Convert to chess notation for display
-                start_notation = utils.coord_to_notation(best_move[0][0], best_move[0][1])
-                end_notation = utils.coord_to_notation(best_move[1][0], best_move[1][1])
-                
-                is_capture = abs(best_move[1][0] - best_move[0][0]) > 1
-                move_type = "capture" if is_capture else "move"
-                move_analysis = f"Best {move_type} is from {start_notation} to {end_notation}"
-            
+            material_advantage = self.get_material_analysis_string(white_pieces, black_pieces)
+            move_analysis = self.generate_move_analysis(best_move)
             # Game phase estimation
-            total_pieces = white_pieces + black_pieces
-            if total_pieces > 18:
-                phase = "opening"
-            elif total_pieces > 10:
-                phase = "middle game"
-            else:
-                phase = "endgame"
+            phase = self.determine_game_phase(white_pieces, black_pieces)
             
             # Check for potential king promotions
-            potential_kings = []
-            for move in self.game.available_moves:
-                start, end = move
-                piece = PieceType(board[start[0], start[1]])
-                if ((piece == PieceType.BLACK and end[0] == 0) or 
-                    (piece == PieceType.WHITE and end[0] == 7)):
-                    potential_kings.append(move)
+            potential_kings = self.king_potential_count(game)
             
             king_promotion = "No potential king promotions"
-            if potential_kings:
-                king_promotion = f"Potential king promotion(s) available: {len(potential_kings)}"
+            if potential_kings > 0:
+                king_promotion = f"Potential king promotion(s) available: {potential_kings}"
             
             analysis = {
                 "current_player": current_player.name,
@@ -172,7 +181,7 @@ class CheckersAnalyzer:
                 "king_promotion": king_promotion,
                 "white_pieces": white_pieces,
                 "black_pieces": black_pieces,
-                "available_moves": len(self.game.available_moves)
+                "available_moves": len(game.available_moves)
             }
             
             return analysis
@@ -192,3 +201,13 @@ class CheckersAnalyzer:
                 "black_pieces": 12,
                 "available_moves": len(self.game.available_moves)
             }
+
+    def determine_game_phase(self, white_pieces, black_pieces):
+        total_pieces = white_pieces + black_pieces
+        if total_pieces > 18:
+            phase = "opening"
+        elif total_pieces > 10:
+            phase = "middle game"
+        else:
+            phase = "endgame"
+        return phase
