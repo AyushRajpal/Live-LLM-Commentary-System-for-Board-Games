@@ -5,6 +5,7 @@ A Python-based system that provides real-time commentary for checkers games usin
 ## Overview
 
 This project creates a checkers game with live commentary, combining:
+
 - A complete checkers game with proper rules
 - AI analysis of the game state
 - LLM-generated commentary
@@ -14,17 +15,26 @@ This project creates a checkers game with live commentary, combining:
 
 - Python 3.6+
 - Required packages: numpy, pygame, pyttsx3, requests
+- For Linux users: `espeak` package is required for text-to-speech (install with `sudo apt-get install espeak`)
 
 ## Quick Start
 
 1. Install dependencies:
+
 ```bash
 pip install numpy pygame pyttsx3 requests
 ```
 
-2. Run the game:
+Or use the requirements file:
+
 ```bash
-python checkers_commentary.py
+pip install -r requirements.txt
+```
+
+2. Run the game:
+
+```bash
+python main.py
 ```
 
 ## How to Play
@@ -34,6 +44,9 @@ python checkers_commentary.py
   - Regular pieces move diagonally forward only
   - Kings (with crown symbol) move diagonally in any direction
   - Capturing opponent pieces is mandatory when available
+  - A piece becomes a king when it reaches the opposite end of the board
+  - The game ends when one player captures all of the opponent's pieces or blocks them from moving
+  - If a piece can capture more than one opponent piece in a single turn, it can and must do so
 
 - **Controls**:
   - Click on a piece to select it
@@ -45,17 +58,21 @@ python checkers_commentary.py
 By default, the system uses mock commentary. To use actual LLM commentary:
 
 1. Get a Gemini API key from Google AI Studio
-2. Update the CONFIG dictionary in checkers_commentary.py:
-```python
-CONFIG = {
-    "llm_provider": "gemini",  # Change from "mock" to "gemini"
-    "api_key": "YOUR_API_KEY_HERE",  # Add your Gemini API key
+2. Update the CONFIG dictionary in config.json:
+
+```json
+{
+    "llm_provider": "gemini",
+    "api_key": "<Your API Key>",
 }
 ```
 
+Note that if the config file is not present, it will create a new one with default values, found in `config_util.py`.
+
 ## Customization
 
-Modify these values in the CONFIG dictionary:
+Modify these values in the `config.json` file:
+
 - `commentary_style`: "educational", "casual", or "expert"
 - `text_to_speech`: True or False
 - `board_size`: Standard is 8, but can be changed
