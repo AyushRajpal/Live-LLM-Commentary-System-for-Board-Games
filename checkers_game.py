@@ -15,9 +15,15 @@ import sys
 import subprocess
 
 # local imports
+# from checkers_evaluator import CheckersAnalyzer
 from config_util import get_config
 from text2speech import CommandTTS
 import utils
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from checkers_evaluator import CheckersAnalyzer
+    from llm_integration import CommentaryGenerator
 
 CONFIG = get_config()
 
@@ -56,7 +62,7 @@ class CheckersGame:
         
         return board
     
-    def _is_king_row(self, row, piece_type):
+    def _is_king_row(self, row:int, piece_type:PieceType):
         """Check if the piece has reached the king row."""
         if piece_type == PieceType.BLACK:
             return row == 0
@@ -64,7 +70,7 @@ class CheckersGame:
             return row == self.board_size - 1
         return False
     
-    def _get_piece_moves(self, row, col):
+    def _get_piece_moves(self, row:int, col:int):
         """Get all valid moves for a specific piece."""
         piece = PieceType(self.board[row, col])
         if piece == PieceType.EMPTY or (piece == PieceType.WHITE and self.current_player == PieceType.BLACK) or (piece == PieceType.BLACK and self.current_player == PieceType.WHITE):
@@ -219,7 +225,7 @@ class CheckersGame:
 class CheckersUI:
     """User interface for the checkers game and commentary."""
     
-    def __init__(self, game, analyzer, commentator):
+    def __init__(self, game:CheckersGame, analyzer:'CheckersAnalyzer', commentator:'CommentaryGenerator'):
         logging.info("Initializing CheckersUI")
         self.game = game
         self.analyzer = analyzer
