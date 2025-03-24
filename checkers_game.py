@@ -327,8 +327,10 @@ class CheckersUI:
                         if success:
                             # Generate new commentary
                             analysis = self.analyzer.analyze_game_state()
-                            self.current_commentary = self.commentator.generate_commentary(self.game, analysis)
                             
+                            self.current_commentary = self.commentator.generate_commentary(self.game, analysis)
+                            logging.info(f"Commentary: {self.current_commentary}")
+                            print(self.current_commentary)
                             # Speak the commentary
                             if self.tts:
                                 self.tts.speak(self.current_commentary)
