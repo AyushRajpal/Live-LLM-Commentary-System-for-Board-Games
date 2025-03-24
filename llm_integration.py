@@ -25,7 +25,7 @@ class CommentaryGenerator:
     def _build_gemini_prompt(self, game_state, analysis):
         """Build a prompt for the Gemini API based on the game state and analysis."""
         prompt = f"""
-        You are an expert checkers commentator with a {self.style} style. Analyze this game state and provide insightful commentary.
+        You are an expert checkers commentator with a {self.style} style. Analyze this game state and provide insightful commentary. Respond as if this is not the first position you are evaluating. Only respond with the analysis
         
         Game State:
         {game_state}
@@ -39,7 +39,7 @@ class CommentaryGenerator:
         - King promotion opportunities: {analysis['king_promotion']}
         
         Based on this information, provide a brief, natural-sounding commentary that explains the current situation, 
-        evaluates the position, and discusses potential strategy. Keep your response between 2-4 sentences.
+        evaluates the position, and discusses potential strategy, and justify why the said best move is good. Keep your response between 2-4 sentences.
         """
         return prompt
     
@@ -112,6 +112,19 @@ class CommentaryGenerator:
             elif CONFIG["llm_provider"] == "mock":
                 # Mock commentary for testing
                 commentary = self._generate_mock_commentary(game_state, analysis)
+            elif CONFIG["llm_provider"].startswith("ollama:"):
+                model : str = CONFIG["llm_provider"]
+                model = model.removeprefix("ollama:")
+                # only import if needed
+                try:
+                    import ollama
+                    ollama_prompt = self._build_gemini_prompt(game_state, analysis)
+                    response = ollama.generate(model=model, prompt=ollama_prompt,keep_alive="-1m")
+                    return response.response
+                except Exception as e:
+                    logging.error(f"Error loading OLLAMA model: {str(e)}")
+                    logging.error(traceback.format_exc())
+                    return f"Ollama Fallback:{self._generate_mock_commentary(game_state, analysis)}"
             else:
                 if CONFIG["llm_provider"]:
                     return f"Unknown LLM provider: {CONFIG['llm_provider']}"
