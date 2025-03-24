@@ -16,6 +16,22 @@ from checkers_evaluator import CheckersAnalyzer
 from llm_integration import CommentaryGenerator
 from config_util import get_config
 
+def setup_ollama_model():
+    """ Load the OLLAMA model for generating commentary """
+    CONFIG = get_config()
+    if not CONFIG["llm_provider"].startswith("ollama:"):
+        return
+    model = CONFIG["llm_provider"].removeprefix("ollama:")
+    try:
+        import ollama
+        ollama.generate(model=model, prompt="Test prompt",keep_alive="-1m")
+    except Exception as e:
+        logging.error(f"Error loading OLLAMA model: {str(e)}")
+        logging.error(traceback.format_exc())
+        print(f"Error loading OLLAMA model: {str(e)}")
+        print("Check logs for details")
+        
+
 
 def setup_logging():
     """Set up logging with proper error handling and path resolution"""

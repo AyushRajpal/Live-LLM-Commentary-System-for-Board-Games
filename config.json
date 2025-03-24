@@ -1,5 +1,5 @@
 {
-    "llm_provider": "mock",
+    "llm_provider": "ollama:gemma3:4b",
     "api_key": "",
     "commentary_style": "educational",
     "text_to_speech": true,
