@@ -248,7 +248,9 @@ class CheckersUI:
             "black_piece": (0, 0, 0),          # Black
             "text_bg": (50, 50, 50),           # Dark gray
             "text": (255, 255, 255),           # White text
-            "valid_move": (255, 255, 0, 128)   # Semi-transparent yellow
+            "valid_move": (255, 255, 0, 128),  # Semi-transparent yellow
+            "scroll_button": (80, 80, 80),     # Scroll button color
+            "scroll_button_hover": (120, 120, 120) # Scroll button hover color
         }
         
         # Font
@@ -257,6 +259,11 @@ class CheckersUI:
         
         # Commentary
         self.current_commentary = "Game started. Waiting for the first move..."
+        
+        # Scrolling for commentary
+        self.commentary_scroll = 0
+        self.commentary_lines = []
+        self.max_scroll = 0
         
         # Text-to-speech
         if CONFIG["text_to_speech"]:
@@ -289,6 +296,33 @@ class CheckersUI:
                         row = (mouse_pos[1] - board_top) // self.square_size
                         
                         self.handle_board_click(row, col)
+                    
+                    # Handle scroll button clicks
+                    info_left = self.board_padding * 2 + self.board_width
+                    info_width = self.window_width - info_left - self.board_padding
+                    
+                    scroll_up_rect = pygame.Rect(info_left + info_width - 50, 130, 20, 20)
+                    scroll_down_rect = pygame.Rect(info_left + info_width - 25, 130, 20, 20)
+                    
+                    if scroll_up_rect.collidepoint(mouse_pos):
+                        # Fix: Up button should decrease scroll position (move text down)
+                        self.commentary_scroll = max(0, self.commentary_scroll - 1)
+                    elif scroll_down_rect.collidepoint(mouse_pos):
+                        # Fix: Down button should increase scroll position (move text up)
+                        self.commentary_scroll = min(self.max_scroll, self.commentary_scroll + 1)
+                
+                elif event.type == pygame.MOUSEWHEEL:
+                    # Handle mouse wheel scrolling when mouse is over commentary area
+                    mouse_pos = pygame.mouse.get_pos()
+                    info_left = self.board_padding * 2 + self.board_width
+                    info_width = self.window_width - info_left - self.board_padding
+                    
+                    commentary_rect = pygame.Rect(info_left, 130, info_width, 190)
+                    
+                    if commentary_rect.collidepoint(mouse_pos):
+                        # Fix: Invert the wheel direction for more natural scrolling
+                        self.commentary_scroll = max(0, min(self.max_scroll, 
+                                                          self.commentary_scroll + event.y))
             
             return True
         except Exception as e:
@@ -462,16 +496,16 @@ class CheckersUI:
             info_left = self.board_padding * 2 + self.board_width
             info_width = self.window_width - info_left - self.board_padding
             
-            # Title
+            # Title - moved up slightly
             title_surface = self.title_font.render("Live Commentary", True, self.colors["text"])
-            self.screen.blit(title_surface, (info_left, 30))
+            self.screen.blit(title_surface, (info_left, 20))  # Was 30
             
-            # Current player
+            # Current player - moved up
             player_text = f"Current Player: {self.game.current_player.name}"
             player_surface = self.font.render(player_text, True, self.colors["text"])
-            self.screen.blit(player_surface, (info_left, 70))
+            self.screen.blit(player_surface, (info_left, 50))  # Was 70
             
-            # Piece counts
+            # Piece counts - moved up
             board = self.game.get_board_state()
             white_pieces = np.count_nonzero((board == PieceType.WHITE.value) | 
                                             (board == PieceType.WHITE_KING.value))
@@ -480,20 +514,31 @@ class CheckersUI:
             
             pieces_text = f"Black: {black_pieces} pieces | White: {white_pieces} pieces"
             pieces_surface = self.font.render(pieces_text, True, self.colors["text"])
-            self.screen.blit(pieces_surface, (info_left, 100))
+            self.screen.blit(pieces_surface, (info_left, 75))  # Was 100
             
-            # Move count
+            # Move count - moved up
             moves_text = f"Moves: {len(self.game.move_history)}"
             moves_surface = self.font.render(moves_text, True, self.colors["text"])
-            self.screen.blit(moves_surface, (info_left, 130))
+            self.screen.blit(moves_surface, (info_left, 100))  # Was 130
             
-            # Commentary box
+            # Commentary box - moved up and slightly reduced height
+            commentary_box_height = 190  # Was 200
+            commentary_rect = pygame.Rect(info_left, 130, info_width, commentary_box_height)  # Was 170
             pygame.draw.rect(
                 self.screen,
                 self.colors["text_bg"],
-                (info_left, 170, info_width, 200),
+                commentary_rect,
                 border_radius=5
             )
+            
+            # Create a clipping rect for the commentary text
+            clip_rect = pygame.Rect(info_left + 10, 140, info_width - 20, commentary_box_height - 20)  # Adjusted
+            original_clip = self.screen.get_clip()
+            self.screen.set_clip(clip_rect)
+            
+            # Calculate visible lines
+            max_visible_lines = 7  # Reduced to ensure all text fits within the box
+            visible_line_count = min(max_visible_lines, len(self.commentary_lines))
             
             # Render commentary with word wrapping
             words = self.current_commentary.split(' ')
@@ -504,7 +549,7 @@ class CheckersUI:
                 test_line = ' '.join(current_line + [word])
                 test_surface = self.font.render(test_line, True, self.colors["text"])
                 
-                if test_surface.get_width() <= info_width - 20:
+                if test_surface.get_width() <= info_width - 60:  # Give more space for scroll UI
                     current_line.append(word)
                 else:
                     lines.append(' '.join(current_line))
@@ -513,29 +558,111 @@ class CheckersUI:
             if current_line:
                 lines.append(' '.join(current_line))
             
-            for i, line in enumerate(lines):
-                line_surface = self.font.render(line, True, self.colors["text"])
-                self.screen.blit(line_surface, (info_left + 10, 180 + i * 25))
+            self.commentary_lines = lines
+            self.max_scroll = max(0, len(lines) - max_visible_lines)  # Updated for fewer visible lines
             
-            # Commentary style
+            # Draw the visible portion of lines based on scroll position
+            end_index = min(self.commentary_scroll + max_visible_lines, len(lines))
+            for i, line in enumerate(lines[self.commentary_scroll:end_index]):
+                line_surface = self.font.render(line, True, self.colors["text"])
+                self.screen.blit(line_surface, (info_left + 15, 140 + i * 25))  # Adjusted y position
+            
+            # Reset the clipping region
+            self.screen.set_clip(original_clip)
+            
+            # Draw scroll buttons and scrollbar if needed
+            if len(lines) > max_visible_lines:
+                # Up button (with corrected triangle pointing upward)
+                scroll_up_rect = pygame.Rect(info_left + info_width - 50, 130, 20, 20)  # Adjusted
+                pygame.draw.rect(
+                    self.screen,
+                    self.colors["scroll_button_hover"] if scroll_up_rect.collidepoint(pygame.mouse.get_pos()) 
+                    else self.colors["scroll_button"],
+                    scroll_up_rect
+                )
+                pygame.draw.polygon(
+                    self.screen,
+                    self.colors["text"],
+                    [
+                        (info_left + info_width - 40, 135),  # Adjusted
+                        (info_left + info_width - 45, 145),  # Adjusted
+                        (info_left + info_width - 35, 145)   # Adjusted
+                    ]
+                )
+                
+                # Down button (with corrected triangle pointing downward)
+                scroll_down_rect = pygame.Rect(info_left + info_width - 25, 130, 20, 20)  # Adjusted
+                pygame.draw.rect(
+                    self.screen,
+                    self.colors["scroll_button_hover"] if scroll_down_rect.collidepoint(pygame.mouse.get_pos()) 
+                    else self.colors["scroll_button"],
+                    scroll_down_rect
+                )
+                pygame.draw.polygon(
+                    self.screen,
+                    self.colors["text"],
+                    [
+                        (info_left + info_width - 15, 145),  # Adjusted
+                        (info_left + info_width - 20, 135),  # Adjusted
+                        (info_left + info_width - 10, 135)   # Adjusted
+                    ]
+                )
+                
+                # Scroll indicator - properly contained within commentary box
+                if self.max_scroll > 0:
+                    scroll_percent = self.commentary_scroll / self.max_scroll
+                    scrollbar_top = 150  # Adjusted
+                    scrollbar_height = commentary_box_height - 40  # Shorter to stay within bounds
+                    indicator_height = max(20, scrollbar_height * (max_visible_lines / len(lines)))
+                    indicator_pos = scrollbar_top + (scrollbar_height - indicator_height) * scroll_percent
+                    
+                    # Draw scrollbar background
+                    pygame.draw.rect(
+                        self.screen,
+                        (70, 70, 70),  # Slightly darker than the commentary background
+                        (info_left + info_width - 15, scrollbar_top, 5, scrollbar_height),
+                        border_radius=2
+                    )
+                    
+                    # Draw scroll indicator
+                    pygame.draw.rect(
+                        self.screen,
+                        self.colors["scroll_button"],
+                        (info_left + info_width - 15, indicator_pos, 5, indicator_height),
+                        border_radius=2
+                    )
+            
+            # Commentary style - moved up
             style_text = f"Commentary Style: {CONFIG['commentary_style'].title()}"
             style_surface = self.font.render(style_text, True, self.colors["text"])
-            self.screen.blit(style_surface, (info_left, 380))
+            self.screen.blit(style_surface, (info_left, 330))  # Was 380
             
-            # Text-to-speech status
+            # Text-to-speech status - moved up
             tts_text = f"Text-to-Speech: {'On' if CONFIG['text_to_speech'] else 'Off'}"
             tts_surface = self.font.render(tts_text, True, self.colors["text"])
-            self.screen.blit(tts_surface, (info_left, 410))
+            self.screen.blit(tts_surface, (info_left, 355))  # Was 410
             
-            # LLM Provider
-            provider_text = f"LLM Provider: {CONFIG['llm_provider'].title()}"
+            # LLM Provider - moved up
+            provider_text = f"LLM Provider: {CONFIG['llm_provider']}"
             provider_surface = self.font.render(provider_text, True, self.colors["text"])
-            self.screen.blit(provider_surface, (info_left, 440))
+            self.screen.blit(provider_surface, (info_left, 380))  # Was 440
             
-            # Instructions
-            instructions_text = "Click on a piece to select, then click destination"
-            instructions_surface = self.font.render(instructions_text, True, self.colors["text"])
-            self.screen.blit(instructions_surface, (info_left, 470))
+            # Instructions - moved up significantly with more space at the bottom
+            # First line
+            instructions_line1 = "Click on a piece to select,"
+            line1_surface = self.font.render(instructions_line1, True, self.colors["text"])
+            self.screen.blit(line1_surface, (info_left, 420))  # Was 470
+            
+            # Second line
+            instructions_line2 = "then click on a highlighted square"
+            line2_surface = self.font.render(instructions_line2, True, self.colors["text"])
+            self.screen.blit(line2_surface, (info_left, 445))  # Was 490
+            
+            # Third line
+            instructions_line3 = "to move"
+            line3_surface = self.font.render(instructions_line3, True, self.colors["text"])
+            self.screen.blit(line3_surface, (info_left, 470))  # New line
+                
         except Exception as e:
             logging.error(f"Error in draw_game_info: {str(e)}")
             logging.error(traceback.format_exc())

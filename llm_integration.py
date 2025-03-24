@@ -118,8 +118,12 @@ class CommentaryGenerator:
                 # only import if needed
                 try:
                     import ollama
+                    logging.info(f"Successfully imported ollama package")
                     ollama_prompt = self._build_gemini_prompt(game_state, analysis)
+                    logging.info(f"Sending prompt to Ollama model: {model}")
+                    logging.info(f"Ollama server: http://localhost:11434")
                     response = ollama.generate(model=model, prompt=ollama_prompt,keep_alive="-1m")
+                    logging.info(f"Got response from Ollama")
                     return response.response
                 except Exception as e:
                     logging.error(f"Error loading OLLAMA model: {str(e)}")
