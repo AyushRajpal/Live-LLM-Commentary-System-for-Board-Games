@@ -47,6 +47,7 @@ At a high level, the system runs a loop each move:
 ```bash
 pip install numpy pygame pyttsx3 requests
 python checkers_commentary.py
+```
 
 USC team project by:
 Arad Firouzkouhi, Ayush Rajpal, Myesha Choudhury, Yash Bengali, Tyler Randall, Jonathan Reyhan, Yung-Chi Tsao
