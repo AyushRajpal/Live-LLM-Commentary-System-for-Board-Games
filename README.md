@@ -1,66 +1,52 @@
-# Live Checkers Commentary System
+# Live LLM Commentary System for Board Games (Checkers → Chess)
 
-A Python-based system that provides real-time commentary for checkers games using LLM technology.
+An interactive board-game environment that generates **engine-grounded, real-time commentary** using Large Language Models (LLMs), with optional **text-to-speech (TTS)**.
 
-## Overview
+This project began with **Checkers** and then transitioned to a stronger **Chess** implementation once the pipeline was validated, leveraging robust chess tooling (e.g., Stockfish) and richer domain knowledge in LLMs.
 
-This project creates a checkers game with live commentary, combining:
-- A complete checkers game with proper rules
-- AI analysis of the game state
-- LLM-generated commentary
-- Text-to-speech to narrate the commentary
+## Project Report
+- 📄 **Paper / Report:** [Live-LLM-Commentary-System-for-Board-Games.pdf](docs/Live-LLM-Commentary-System-for-Board-Games.pdf)
+
+## What this system does
+At a high level, the system runs a loop each move:
+1. **Extract board state** (structured summary / representation)
+2. **Evaluate the position**
+   - Checkers: heuristic + search (minimax with alpha-beta pruning)
+   - Chess: engine-based evaluation (e.g., Stockfish) with top continuations
+3. **Generate commentary** by prompting an LLM with:
+   - current position + evaluation signals
+   - (chess) best move + eval score + multi-line continuations, plus context about the previous move
+4. **Render UI + output commentary** in real-time (plus optional TTS)
+
+## Modules
+### 1) Checkers (prototype in `main`)
+- Playable 2-player checkers UI
+- Game-state evaluation + LLM commentary + optional TTS
+- This repo’s current `main` branch contains the checkers prototype:
+  - `checkers_commentary.py`
+
+### 2) Chess (experimental extension described in the report)
+- A parallel chess implementation designed to take advantage of:
+  - robust evaluation tooling (Stockfish)
+  - LLM familiarity with chess concepts and terminology
+- The report covers the chess prompt design and engine/LLM integration approach.
+
+> Note: If your chess code lives on a separate branch, you can link it here (e.g., “See branch: `...`”).
+
+## Tech Stack
+- **Python**
+- **UI:** `pygame`
+- **LLM integration:** designed to be model/provider-agnostic (API-based or local runner)
+- **TTS:** optional speech output (e.g., `pyttsx3` or OS-native commands)
 
 ## Requirements
+- Python 3.8+ recommended
+- Packages (current checkers prototype): `numpy`, `pygame`, `pyttsx3`, `requests`
 
-- Python 3.6+
-- Required packages: numpy, pygame, pyttsx3, requests
-
-## Quick Start
-
-1. Install dependencies:
+## Quick Start (Checkers)
 ```bash
 pip install numpy pygame pyttsx3 requests
-```
-
-2. Run the game:
-```bash
 python checkers_commentary.py
-```
 
-## How to Play
-
-- **Game Rules**:
-  - Black moves first
-  - Regular pieces move diagonally forward only
-  - Kings (with crown symbol) move diagonally in any direction
-  - Capturing opponent pieces is mandatory when available
-
-- **Controls**:
-  - Click on a piece to select it
-  - Valid moves will be highlighted in yellow
-  - Click on a highlighted square to move there
-
-## LLM Integration
-
-By default, the system uses mock commentary. To use actual LLM commentary:
-
-1. Get a Gemini API key from Google AI Studio
-2. Update the CONFIG dictionary in checkers_commentary.py:
-```python
-CONFIG = {
-    "llm_provider": "gemini",  # Change from "mock" to "gemini"
-    "api_key": "YOUR_API_KEY_HERE",  # Add your Gemini API key
-}
-```
-
-## Customization
-
-Modify these values in the CONFIG dictionary:
-- `commentary_style`: "educational", "casual", or "expert"
-- `text_to_speech`: True or False
-- `board_size`: Standard is 8, but can be changed
-
-## Troubleshooting
-
-- **Display Issues**: Adjust window size in CONFIG dictionary
-- **Text-to-Speech Issues**: Try disabling it by setting `"text_to_speech": False`
+USC team project by:
+Arad Firouzkouhi, Ayush Rajpal, Myesha Choudhury, Yash Bengali, Tyler Randall, Jonathan Reyhan, Yung-Chi Tsao
